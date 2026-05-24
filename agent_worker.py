@@ -72,7 +72,7 @@ class AgentWorker(QObject):
                     self._config
                 )
                 ai_response = result["messages"][-1].content
-                stripped = re.sub(r'[（(][^）)]*[）)]', '', ai_response).strip()
+                stripped = re.sub(r'[（(][^）)]*[一-鿿][^）)]*[）)]', '', ai_response).strip()
                 ai_response = stripped if stripped else ai_response
                 if ai_response.strip():
                     self.response_received.emit(ai_response)

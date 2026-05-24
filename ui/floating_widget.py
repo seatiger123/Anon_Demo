@@ -7,6 +7,7 @@ from PySide6.QtWidgets import QWidget, QMenu
 
 class FloatingWidget(QWidget):
     clicked = Signal()
+    theme_toggled = Signal()
 
     NORMAL_SIZE = 80
     HOVER_SIZE = 100
@@ -117,6 +118,8 @@ class FloatingWidget(QWidget):
             return
 
         menu = QMenu(self)
+        theme_action = menu.addAction("切换主题")
+        theme_action.triggered.connect(self.theme_toggled.emit)
         quit_action = menu.addAction("退出")
         quit_action.triggered.connect(self._quit_app)
         menu.exec(event.globalPos())

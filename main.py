@@ -90,6 +90,7 @@ def main():
     floating.clicked.connect(chat.show)
     floating.clicked.connect(chat.raise_)
     floating.clicked.connect(chat.activateWindow)
+    floating.theme_toggled.connect(chat.toggle_theme)
 
     # Chat window -> Agent worker (cross-thread, auto QueuedConnection)
     chat.message_sent.connect(worker.send_message)
