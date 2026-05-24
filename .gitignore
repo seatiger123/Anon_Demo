@@ -1,3 +1,4 @@
 resources/checkpoint.db*
+resources/voice_cache/
 __pycache__/
 *.pyc

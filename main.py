@@ -8,6 +8,8 @@ from PySide6.QtCore import QObject, QThread, QUrl
 from PySide6.QtMultimedia import QMediaPlayer, QAudioOutput
 
 from agent_worker import AgentWorker
+from voice_worker import VoiceWorker
+from gpt_sovits_server import GptSovitsServer
 from ui.floating_widget import FloatingWidget
 from ui.chat_window import ChatWindow
 
@@ -48,12 +50,29 @@ class UiRelay(QObject):
     get called in the worker thread, causing "setParent" crashes.
     """
 
-    def __init__(self, chat):
+    def __init__(self, chat, voice_worker):
         super().__init__()
         self.chat = chat
+        self._voice_worker = voice_worker
 
     def on_response(self, text: str):
-        self.chat.display_splitted_response(text)
+        # 取消之前的语音生成（如果还在进行中）
+        self._voice_worker.cancel()
+        if self.chat.is_voice_mode():
+            # 语音模式：中文 → 日文翻译 → 日文语音合成
+            self.chat.set_loading_text("对方正在说话...")
+            self._voice_worker.generate(text, text_lang="ja")
+        else:
+            # 文本模式：现有逻辑
+            self.chat.display_splitted_response(text)
+
+    def on_voice_ready(self, filepath: str, duration: float, spoken: str, original: str):
+        self.chat.display_voice_response(spoken, filepath, duration, chinese_text=original, is_user=False)
+
+    def on_voice_error(self, error_msg: str, original: str):
+        # 语音生成失败，降级为文本显示
+        print(f"[Voice] {error_msg}")
+        self.chat.display_splitted_response(original)
 
     def on_error(self, text: str):
         self.chat.show_error(text)
@@ -63,6 +82,17 @@ class UiRelay(QObject):
 def main():
     app = QApplication(sys.argv)
     app.setQuitOnLastWindowClosed(False)
+
+    # GPT-SoVITS 语音服务自启动
+    gpt_sovits = GptSovitsServer()
+    gpt_sovits.server_ready.connect(
+        lambda: print("[GPT-SoVITS] API 服务就绪")
+    )
+    gpt_sovits.server_failed.connect(
+        lambda msg: print(f"[GPT-SoVITS] {msg} — 语音功能将不可用")
+    )
+    gpt_sovits.start()
+    app.aboutToQuit.connect(gpt_sovits.cleanup)
 
     floating = FloatingWidget()
     chat = ChatWindow()
@@ -83,8 +113,14 @@ def main():
     worker_thread.started.connect(worker.initialize)
     worker_thread.finished.connect(worker_thread.deleteLater)
 
+    # Voice worker thread
+    voice_thread = QThread()
+    voice_worker = VoiceWorker()
+    voice_worker.moveToThread(voice_thread)
+    voice_thread.finished.connect(voice_thread.deleteLater)
+
     # Relay — stays in main thread as the receiver for all worker signals
-    relay = UiRelay(chat)
+    relay = UiRelay(chat, voice_worker)
 
     # Floating widget -> Chat window
     floating.clicked.connect(chat.show)
@@ -95,13 +131,29 @@ def main():
     # Chat window -> Agent worker (cross-thread, auto QueuedConnection)
     chat.message_sent.connect(worker.send_message)
 
+    # Chat window voice mode toggle -> debug log
+    chat.voice_mode_changed.connect(
+        lambda on: print(f"[Voice] 语音模式={'开启' if on else '关闭'}")
+    )
+
     # Agent worker -> relay (cross-thread, relay is in main thread, auto QueuedConnection)
     worker.response_received.connect(relay.on_response)
     worker.error_occurred.connect(relay.on_error)
     worker.status_changed.connect(lambda s: _play_entrance_voice() if s == "ready" else None)
     worker.status_changed.connect(lambda s: print(f"[Agent] {s}"))
 
+    # Voice worker -> relay
+    voice_worker.voice_ready.connect(relay.on_voice_ready)
+    voice_worker.voice_error.connect(relay.on_voice_error)
+
     worker_thread.start()
+    voice_thread.start()
+
+    # 应用退出时清理
+    app.aboutToQuit.connect(voice_thread.quit)
+    app.aboutToQuit.connect(worker_thread.quit)
+    app.aboutToQuit.connect(voice_thread.wait)
+    app.aboutToQuit.connect(worker_thread.wait)
 
     floating.show()
 
