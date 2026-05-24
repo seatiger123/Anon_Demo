@@ -49,19 +49,25 @@ python main.py
 
 ### 语音模式
 
-语音模式需要额外安装 [GPT-SoVITS](https://github.com/RVC-Boss/GPT-SoVITS) v2Pro，并配置参考音频路径。
+语音模式需要额外安装 [GPT-SoVITS](https://github.com/RVC-Boss/GPT-SoVITS) v2Pro。
 
-1. 在 `voice_utils.py` 中配置你的 GPT-SoVITS 路径和参考音频：
+1. 下载并安装 [GPT-SoVITS v2Pro](https://github.com/RVC-Boss/GPT-SoVITS)，放入任意目录
+2. 在 `gpt_sovits_server.py` 中修改 `GPT_SOVITS_DIR` 为你的安装路径：
 
 ```python
-REF_AUDIO_PATH = r"C:\path\to\your\reference_audio.wav"
-PROMPT_TEXT = "参考音频的日文原文"
+GPT_SOVITS_DIR = r"C:\path\to\GPT-SoVITS-v2pro-xxxx"
+```
+
+3. 在 `voice_utils.py` 中配置参考音频的提示文本（已内置千早爱音参考音频 `resources/anon_ref.wav`）：
+
+```python
+PROMPT_TEXT = "你的参考音频的日文原文"
 PROMPT_LANG = "ja"
 ```
 
-2. 正常启动 `main.py`，程序会自动启动 GPT-SoVITS API 服务
-3. 在输入框点击「🎤 语音」按钮切换到语音模式
-4. 发送消息，AI 回复将自动翻译为日文并通过语音朗读
+4. 正常启动 `main.py`，程序会自动启动 GPT-SoVITS API 服务
+5. 在输入框点击「🎤 语音」按钮切换到语音模式
+6. 发送消息，AI 回复将自动翻译为日文并通过语音朗读
 
 ## 项目结构
 
@@ -80,6 +86,7 @@ Anon_Demo/
 └── resources/
     ├── icon.png            # 悬浮头像图标
     ├── entrance_voice.wav  # 入场语音
+    ├── anon_ref.wav        # 千早爱音参考音频（用于语音合成音色克隆）
     └── voice_cache/        # 语音缓存目录（自动生成）
 ```
 
@@ -117,10 +124,10 @@ self._llm = ChatOpenAI(
 
 | 配置项 | 说明 |
 |---|---|
-| `REF_AUDIO_PATH` | 参考音频路径（用于音色克隆） |
-| `PROMPT_TEXT` | 参考音频的对应文本 |
+| `PROMPT_TEXT` | 参考音频的对应文本（日语原文） |
 | `PROMPT_LANG` | 参考音频语言（`"ja"` / `"zh"`） |
 | `GPT_SOVITS_URL` | GPT-SoVITS API 地址（默认 `http://127.0.0.1:9880/tts`） |
+| `GPT_SOVITS_DIR` | GPT-SoVITS 安装目录（在 `gpt_sovits_server.py` 中配置） |
 
 ### GPT-SoVITS 路径
 

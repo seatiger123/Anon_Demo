@@ -15,7 +15,7 @@ LM_STUDIO_API_URL = "http://127.0.0.1:1234/v1/chat/completions"
 CACHE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "resources", "voice_cache")
 
 # ── 千早爱音 参考音频配置 ──
-REF_AUDIO_PATH = r"C:\mygo\爱音\AnonV2\Anon (1).wav"
+REF_AUDIO_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "resources", "anon_ref.wav")
 PROMPT_TEXT = "千早アノンです。家の都合で変な時期の入学ですが、よかったら仲良くしてください。よろしくお願いします。"
 PROMPT_LANG = "ja"
 
